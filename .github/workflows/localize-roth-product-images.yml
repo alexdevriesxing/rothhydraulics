@@ -1,0 +1,101 @@
+name: Localize Roth product images
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/localize-roth-product-images.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  download-product-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download official Roth Hydraulics product images
+        shell: bash
+        run: |
+          set -u
+          mkdir -p assets/products
+
+          fetch_image() {
+            local url="$1"
+            local output="$2"
+            echo "Downloading $output"
+            if curl -L --fail --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 120 \
+              -A 'Mozilla/5.0 (compatible; RothHydraulicsNL/1.0)' \
+              "$url" -o "$output"; then
+              file "$output"
+            else
+              echo "WARNING: failed to download $url" >&2
+              rm -f "$output"
+            fi
+          }
+
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Produktfoto/Roth-Hydraulics_MEMBRANSPEICHER.png.pagespeed.ce.o9inUrCck6.png' 'assets/products/diaphragm-accumulators.png'
+          fetch_image 'https://www.roth-hydraulics.de/de/img/004%20-%20Roth-Hydraulics%20-%20Products/748px_x_300-Web-BLAK.jpg' 'assets/products/bladder-accumulators.jpg'
+          fetch_image 'https://www.roth-hydraulics.com/en/img/004%20-%20Roth-Hydraulics%20-%20Products/CD_fassungMail_KAKweb.jpg' 'assets/products/piston-accumulators.jpg'
+          fetch_image 'https://www.roth-hydraulics.com/en/img/004%20-%20Roth-Hydraulics%20-%20Products/CD_fassungMail_HydrospeicherSortiment_web.jpg' 'assets/products/accumulator-assortment.jpg'
+          fetch_image 'https://www.roth-hydraulics.de/en/img/004%20-%20Roth-Hydraulics%20-%20Products/CD_fassungMail_ZUBEHOERweb.jpg' 'assets/products/accumulator-accessories.jpg'
+          fetch_image 'https://www.roth-hydraulics.de/en/img/004%20-%20Roth-Hydraulics%20-%20Products/748px_x_300-Web-Druckbehaelter.jpg' 'assets/products/pressure-vessels.jpg'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Produktfoto/Roth_Hydraulics_Druckbehaelteranlage_q.png.pagespeed.ce.hMY_jFDhvQ.png' 'assets/products/pressure-vessel-unit.png'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/_processed_/0/5/csm_Roth-Hydraulics_DRUCKBEHAELTER_2cfb211042.png.pagespeed.ce.94UF0rCoX7.png' 'assets/products/large-pressure-vessel.png'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_KS_Einheit_q.png.pagespeed.ce.oWwJxKDngP.png' 'assets/products/piston-system-ks-unit.png'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_Standard_Bauweise_q.png.pagespeed.ce.h3r561WSJu.webp' 'assets/products/piston-system-standard.webp'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_Modul_Bauweise_q.png.pagespeed.ce.QeresdkGcn.png' 'assets/products/piston-system-modular.png'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Seiteninhalt/Roth_Hydraulics_Duralock_Gew_Tech1.png.pagespeed.ce.pp1D3Uxvwe.png' 'assets/products/duralock-load-distribution.png'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Seiteninhalt/Roth_Hydraulics_Duralock_Gew_Tech2.png.pagespeed.ce.Holz7Uj_a3.png' 'assets/products/duralock-fatigue-resistance.png'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Seiteninhalt/Roth_Hydraulics_Duralock_Gew_Tech3.png.pagespeed.ce.E506gi6OJp.png' 'assets/products/duralock-profile.png'
+
+          # Keep proven local imagery available as explicit family fallbacks.
+          cp -f assets/assembly.webp assets/products/diaphragm-family-fallback.webp
+          cp -f assets/product-range.webp assets/products/bladder-family-fallback.webp
+          cp -f assets/engineering.webp assets/products/engineering-family-fallback.webp
+
+          cat > assets/products/SOURCES.md <<'EOF'
+          # Roth Hydraulics product image sources
+
+          Images in this directory were downloaded from official Roth Hydraulics web properties for use on the Dutch Roth Hydraulics distributor website operated by Hobo Hydrauliek B.V.
+
+          - diaphragm-accumulators.png — roth-hydraulics.de current product imagery
+          - bladder-accumulators.jpg — roth-hydraulics.de official product imagery
+          - piston-accumulators.jpg — roth-hydraulics.com official product imagery
+          - accumulator-assortment.jpg — roth-hydraulics.com official assortment imagery
+          - accumulator-accessories.jpg — roth-hydraulics.de official accessory imagery
+          - pressure-vessels.jpg — roth-hydraulics.de official pressure vessel imagery
+          - pressure-vessel-unit.png — roth-hydraulics.de current product imagery
+          - large-pressure-vessel.png — roth-hydraulics.de current product imagery
+          - piston-system-ks-unit.png — roth-hydraulics.de current system imagery
+          - piston-system-standard.webp — roth-hydraulics.de current system imagery
+          - piston-system-modular.png — roth-hydraulics.de current system imagery
+          - duralock-*.png — roth-hydraulics.de current DURALOCK technical imagery
+
+          Exact source URLs are preserved in `.github/workflows/localize-roth-product-images.yml`.
+          EOF
+
+          echo 'Downloaded files:'
+          find assets/products -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+
+          # Fail if none of the newly requested official image downloads succeeded.
+          count=$(find assets/products -maxdepth 1 -type f ! -name '*fallback*' ! -name 'SOURCES.md' | wc -l)
+          if [ "$count" -lt 1 ]; then
+            echo 'No official product images could be downloaded.' >&2
+            exit 1
+          fi
+
+      - name: Commit localized product images
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/products
+          if git diff --cached --quiet; then
+            echo 'No product image changes to commit.'
+          else
+            git commit -m 'Localize official Roth Hydraulics product images'
+            git push
+          fi
