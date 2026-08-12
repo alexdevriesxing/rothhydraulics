@@ -7,6 +7,8 @@
   const noResults = document.querySelector('#catalogue-no-results');
   let activeCategory = 'all';
 
+  // Keep every catalogue image local. If a specific local image cannot load,
+  // fall back to another locally stored official Roth family image.
   document.querySelectorAll('img[data-fallback]').forEach((img) => {
     img.addEventListener('error', () => {
       const fallback = img.dataset.fallback;
@@ -14,7 +16,27 @@
     }, { once: true });
   });
 
-  const normalize = (value) => (value || '').toLocaleLowerCase('nl-NL').normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  // These named items do not have a separately published exact photo in the
+  // public source set used for the catalogue. Make the representative status
+  // explicit rather than implying that the related Roth image is the exact item.
+  ['standaard-drukvat', 'speciaal-drukvat', 'rvs-accumulatoren'].forEach((id) => {
+    const card = document.getElementById(id);
+    const caption = card?.querySelector('.photo-label');
+    if (caption) caption.textContent = 'Officiële Roth-familiefoto · representatief';
+  });
+
+  ['breekplaten', 'smeltzekeringen-fusible-plugs'].forEach((id) => {
+    const card = document.getElementById(id);
+    const image = card?.querySelector('img');
+    const caption = card?.querySelector('.photo-label');
+    if (image) image.src = 'assets/products/diaphragm-family-fallback.webp';
+    if (caption) caption.textContent = 'Officiële Roth-familiefoto · representatief';
+  });
+
+  const normalize = (value) => (value || '')
+    .toLocaleLowerCase('nl-NL')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
 
   function applyFilters() {
     const query = normalize(search?.value);
