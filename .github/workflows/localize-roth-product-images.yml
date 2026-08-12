@@ -20,13 +20,13 @@ jobs:
         shell: bash
         run: |
           set -u
-          mkdir -p assets/products
+          mkdir -p assets/products assets/products/discovered
 
           fetch_image() {
             local url="$1"
             local output="$2"
             echo "Downloading $output"
-            if curl -L --fail --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 120 \
+            if curl -L --fail --retry 2 --retry-delay 1 --connect-timeout 15 --max-time 60 \
               -A 'Mozilla/5.0 (compatible; RothHydraulicsNL/1.0)' \
               "$url" -o "$output"; then
               file "$output"
@@ -36,22 +36,60 @@ jobs:
             fi
           }
 
+          discover_page_images() {
+            local page="$1"
+            local slug="$2"
+            local html
+            html=$(mktemp)
+            echo "Discovering current imagery on $page"
+            if ! curl -L --fail --connect-timeout 15 --max-time 60 -A 'Mozilla/5.0' "$page" -o "$html"; then
+              echo "WARNING: could not fetch product page $page" >&2
+              rm -f "$html"
+              return 0
+            fi
+            mapfile -t candidates < <(
+              grep -oE '/fileadmin/[^"'"'"'<>[:space:]]+' "$html" \
+                | sed 's/&amp;/\&/g' \
+                | grep -Ei '(Produktfoto|Anlagenfoto|Seiteninhalt|_processed_)' \
+                | grep -Ei '\.(png|jpe?g|webp)(\.|\?|$)' \
+                | awk '!seen[$0]++' \
+                | head -n 6
+            )
+            local n=1
+            for path in "${candidates[@]}"; do
+              local cleanpath="${path%%\?*}"
+              local ext="${cleanpath##*.}"
+              case "$ext" in
+                png|jpg|jpeg|webp) ;;
+                *) ext="png" ;;
+              esac
+              fetch_image "https://www.roth-hydraulics.de$path" "assets/products/discovered/${slug}-$(printf '%02d' "$n").$ext"
+              n=$((n+1))
+            done
+            echo "Candidates for $slug: ${#candidates[@]}"
+            rm -f "$html"
+          }
+
+          # Stable current Roth product imagery.
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Produktfoto/Roth-Hydraulics_MEMBRANSPEICHER.png.pagespeed.ce.o9inUrCck6.png' 'assets/products/diaphragm-accumulators.png'
-          fetch_image 'https://www.roth-hydraulics.de/de/img/004%20-%20Roth-Hydraulics%20-%20Products/748px_x_300-Web-BLAK.jpg' 'assets/products/bladder-accumulators.jpg'
-          fetch_image 'https://www.roth-hydraulics.com/en/img/004%20-%20Roth-Hydraulics%20-%20Products/CD_fassungMail_KAKweb.jpg' 'assets/products/piston-accumulators.jpg'
-          fetch_image 'https://www.roth-hydraulics.com/en/img/004%20-%20Roth-Hydraulics%20-%20Products/CD_fassungMail_HydrospeicherSortiment_web.jpg' 'assets/products/accumulator-assortment.jpg'
-          fetch_image 'https://www.roth-hydraulics.de/en/img/004%20-%20Roth-Hydraulics%20-%20Products/CD_fassungMail_ZUBEHOERweb.jpg' 'assets/products/accumulator-accessories.jpg'
-          fetch_image 'https://www.roth-hydraulics.de/en/img/004%20-%20Roth-Hydraulics%20-%20Products/748px_x_300-Web-Druckbehaelter.jpg' 'assets/products/pressure-vessels.jpg'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Produktfoto/Roth_Hydraulics_Druckbehaelteranlage_q.png.pagespeed.ce.hMY_jFDhvQ.png' 'assets/products/pressure-vessel-unit.png'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/_processed_/0/5/csm_Roth-Hydraulics_DRUCKBEHAELTER_2cfb211042.png.pagespeed.ce.94UF0rCoX7.png' 'assets/products/large-pressure-vessel.png'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_KS_Einheit_q.png.pagespeed.ce.oWwJxKDngP.png' 'assets/products/piston-system-ks-unit.png'
-          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_Standard_Bauweise_q.png.pagespeed.ce.h3r561WSJu.webp' 'assets/products/piston-system-standard.webp'
+          fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_Standard_Bauweise_q.png.pagespeed.ce.h3r561WSJu.webp' 'assets/products/piston-system-standard.png'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Anlagenfoto/Roth_Hydraulics_Speicheranlage_Modul_Bauweise_q.png.pagespeed.ce.QeresdkGcn.png' 'assets/products/piston-system-modular.png'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Seiteninhalt/Roth_Hydraulics_Duralock_Gew_Tech1.png.pagespeed.ce.pp1D3Uxvwe.png' 'assets/products/duralock-load-distribution.png'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Seiteninhalt/Roth_Hydraulics_Duralock_Gew_Tech2.png.pagespeed.ce.Holz7Uj_a3.png' 'assets/products/duralock-fatigue-resistance.png'
           fetch_image 'https://www.roth-hydraulics.de/fileadmin/user_upload/Roth_Hydraulics/img/Seiteninhalt/Roth_Hydraulics_Duralock_Gew_Tech3.png.pagespeed.ce.E506gi6OJp.png' 'assets/products/duralock-profile.png'
 
-          # Keep proven local imagery available as explicit family fallbacks.
+          # Discover current product images directly from Roth's live product pages so URL changes do not leave hotlinks behind.
+          discover_page_images 'https://www.roth-hydraulics.de/en/products/hydraulic-accumulators/bladder-accumulator' 'bladder'
+          discover_page_images 'https://www.roth-hydraulics.de/en/products/hydraulic-accumulators/piston-accumulator' 'piston'
+          discover_page_images 'https://www.roth-hydraulics.de/en/products/hydraulic-accumulators/special-accumulators' 'special'
+          discover_page_images 'https://www.roth-hydraulics.de/en/products/hydraulic-accumulators/accumulator-accessories' 'accessories'
+          discover_page_images 'https://www.roth-hydraulics.de/en/products/accumulator-systems/bladder-accumulator-systems' 'bladder-system'
+          discover_page_images 'https://www.roth-hydraulics.de/en/products/innovations/n2-charging-unit' 'n2-charger'
+
+          # Proven local Roth imagery retained as family fallbacks.
           cp -f assets/assembly.webp assets/products/diaphragm-family-fallback.webp
           cp -f assets/product-range.webp assets/products/bladder-family-fallback.webp
           cp -f assets/engineering.webp assets/products/engineering-family-fallback.webp
@@ -59,31 +97,19 @@ jobs:
           cat > assets/products/SOURCES.md <<'EOF'
           # Roth Hydraulics product image sources
 
-          Images in this directory were downloaded from official Roth Hydraulics web properties for use on the Dutch Roth Hydraulics distributor website operated by Hobo Hydrauliek B.V.
+          Product imagery in this directory is stored locally for the Dutch Roth Hydraulics distributor website operated by Hobo Hydrauliek B.V.
 
-          - diaphragm-accumulators.png — roth-hydraulics.de current product imagery
-          - bladder-accumulators.jpg — roth-hydraulics.de official product imagery
-          - piston-accumulators.jpg — roth-hydraulics.com official product imagery
-          - accumulator-assortment.jpg — roth-hydraulics.com official assortment imagery
-          - accumulator-accessories.jpg — roth-hydraulics.de official accessory imagery
-          - pressure-vessels.jpg — roth-hydraulics.de official pressure vessel imagery
-          - pressure-vessel-unit.png — roth-hydraulics.de current product imagery
-          - large-pressure-vessel.png — roth-hydraulics.de current product imagery
-          - piston-system-ks-unit.png — roth-hydraulics.de current system imagery
-          - piston-system-standard.webp — roth-hydraulics.de current system imagery
-          - piston-system-modular.png — roth-hydraulics.de current system imagery
-          - duralock-*.png — roth-hydraulics.de current DURALOCK technical imagery
+          Primary sources are official Roth Hydraulics product pages and official `roth-hydraulics.de` image assets. The workflow `.github/workflows/localize-roth-product-images.yml` preserves the exact fixed URLs and the product-page discovery URLs used for local copies.
 
-          Exact source URLs are preserved in `.github/workflows/localize-roth-product-images.yml`.
+          The `discovered/` files are automatically extracted from the live official Roth product pages. When Roth does not publish an individual photograph for a named option or special variant, the catalogue deliberately uses an official locally stored family photograph and labels it as representative.
           EOF
 
-          echo 'Downloaded files:'
-          find assets/products -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+          echo 'Localized files:'
+          find assets/products -type f -printf '%P %s bytes\n' | sort
 
-          # Fail if none of the newly requested official image downloads succeeded.
-          count=$(find assets/products -maxdepth 1 -type f ! -name '*fallback*' ! -name 'SOURCES.md' | wc -l)
-          if [ "$count" -lt 1 ]; then
-            echo 'No official product images could be downloaded.' >&2
+          count=$(find assets/products -type f ! -name '*fallback*' ! -name 'SOURCES.md' | wc -l)
+          if [ "$count" -lt 8 ]; then
+            echo "Only $count official image files were localized; expected at least 8." >&2
             exit 1
           fi
 
@@ -96,6 +122,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'No product image changes to commit.'
           else
-            git commit -m 'Localize official Roth Hydraulics product images'
+            git commit -m 'Expand localized Roth Hydraulics product imagery'
             git push
           fi
