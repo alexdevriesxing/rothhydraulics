@@ -7,4 +7,5 @@
   <url><loc>https://rothhydraulics.nl/over-roth.html</loc><changefreq>yearly</changefreq><priority>0.6</priority></url>
   <url><loc>https://rothhydraulics.nl/contact.html</loc><changefreq>yearly</changefreq><priority>0.8</priority></url>
   <url><loc>https://rothhydraulics.nl/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://rothhydraulics.nl/downloads.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

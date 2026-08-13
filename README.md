@@ -40,3 +40,13 @@ De site is statisch en gebruikt alleen HTML, CSS en JavaScript. Het aanvraagform
 - Nederlandse offerte- en contactroute via Hobo Hydrauliek B.V.
 - SEO, sitemap, redirects en security headers
 - Responsieve desktop-, tablet- en mobiele vormgeving
+
+
+## Catalogus UX
+
+- 46 benoemde Roth-producten, opties en oplossingen
+- Zoeken en filteren
+- Multi-product shortlist voor één technische aanvraag
+- Vergelijking van geselecteerde catalogusitems op gepubliceerde kerngegevens
+- Contextuele links naar relevante aangrenzende productgroepen
+- Technische downloadhub met actuele links naar officiële Roth Hydraulics-documentatie
