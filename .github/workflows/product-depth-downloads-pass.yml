@@ -14,6 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Adapt pass script to current minified catalogue JS
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/product_depth_pass.py')
+          s=p.read_text(encoding='utf-8')
+          old="marker = '  applyFilters();renderShortlist();\\n})();'"
+          new="marker = 'applyFilters();render()})();'"
+          if old not in s:
+              raise SystemExit('Expected source marker not found in pass script')
+          p.write_text(s.replace(old,new),encoding='utf-8')
+          PY
       - name: Apply product depth pass
         run: python .github/scripts/product_depth_pass.py
       - name: Validate
